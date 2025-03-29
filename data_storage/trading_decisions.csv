@@ -1,0 +1,12 @@
+id,symbol,decision,confidence,agent_name,created_at
+1,MSFT,BUY,0.92,strategy_agent,2026-10-19T19:14:45.602630
+2,AAPL,HOLD,0.75,trading_signal_agent,2026-10-19T19:20:44.384845
+3,AAPL,HOLD,0.75,trading_signal_agent,2026-10-19T19:21:43.864840
+4,AAPL,HOLD,0.68,trading_signal_agent,2026-10-19T19:23:14.247128
+5,AAPL,SIGNAL:HOLD | Risk:MEDIUM,0.68,trading_signal_agent,2026-10-19T19:23:16.315314
+6,AAPL,Market Analysis Completed,0.8,market_analyst,2026-10-19T19:23:24.463951
+7,AAPL,Strategy Analysis Completed,0.75,strategy_agent,2026-10-19T19:23:24.500546
+8,AAPL,Risk Analysis Completed,0.85,risk_manager,2026-10-19T19:23:24.508850
+9,AAPL,PROCEED_WITH_CAUTION,0.9,regulatory_agent,2026-10-19T19:23:24.517747
+10,AAPL,Signal: HOLD | Risk: MEDIUM | Entry: 341.93 | Target: 342.88,0.68,trading_signal_agent,2026-10-19T19:23:24.529024
+11,AAPL,HOLD,0.7,supervisor,2026-10-19T19:23:24.536885
