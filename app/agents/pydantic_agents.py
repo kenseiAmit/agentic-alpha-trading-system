@@ -297,3 +297,149 @@ class PydanticTradingAgentSystem:
             - Provide clear entry_price, exit_price, position_size_percent, and in-depth rationale.
             - Save decisions and audit entries to maintain compliance and auditability.
             
+            Always enforce strict type safety and return a validated TradingDecision object."""
+
+        @trading_signal_agent.tool
+        def get_market_data(ctx: RunContext[Dependencies], period: str = "1mo") -> str:
+            """Get comprehensive stock data with technical indicators"""
+            stock_data = get_stock_data(ctx.deps.symbol, period, data=ctx.deps.data)
+            return f"Stock data retrieved: {stock_data.model_dump_json()}"
+
+        @trading_signal_agent.tool
+        def get_fibonacci_analysis(ctx: RunContext[Dependencies], lookback_days: int = 20) -> str:
+            """Calculate Fibonacci retracement levels and trading signals"""
+            fib_data = calculate_fibonacci_levels(ctx.deps.symbol, lookback_days)
+            return f"Fibonacci analysis: {fib_data.model_dump_json()}"
+
+        @trading_signal_agent.tool
+        def analyze_patterns(ctx: RunContext[Dependencies], lookback_days: int = 30) -> str:
+            """Analyze historical trading decision patterns"""
+            pattern_data = analyze_decision_patterns(ctx.deps.symbol, lookback_days)
+            return f"Decision patterns: {pattern_data}"
+
+        @trading_signal_agent.tool
+        def save_trading_signal_decision(ctx: RunContext[Dependencies], decision: str, confidence: float) -> str:
+            """Save trading signal decision to database and audit trail"""
+            return save_trading_decision(ctx.deps.symbol, decision, confidence, "trading_signal_agent")
+
+        @trading_signal_agent.tool
+        def save_trading_signal_audit(ctx: RunContext[Dependencies], action: str, confidence: float, rationale: str, risk_level: str = "MEDIUM") -> str:
+            """Save detailed trading signal audit entry"""
+            return save_audit_entry(ctx.deps.symbol, "TRADING_SIGNAL", action, confidence, rationale, risk_level=risk_level)
+        
+        return {
+            "market_analyst": market_agent,
+            "strategy_agent": strategy_agent,
+            "regulatory_agent": regulatory_agent,
+            "risk_manager": risk_agent,
+            "supervisor": supervisor_agent,
+            "trading_signal_agent": trading_signal_agent
+        }
+    
+    def run_market_analysis(self, symbol: str, data: pd.DataFrame) -> Dict[str, Any]:
+        """Run comprehensive market analysis using PydanticAI agents"""
+        try:
+            deps = Dependencies(symbol=symbol, data=data)
+            results = {}
+            
+            # Market Analysis
+            market_prompt = f"""
+            Analyze the market data for {symbol}. Please:
+            1. Get current stock data with technical indicators using the get_market_data tool
+            2. Calculate Fibonacci retracement levels using get_fibonacci_analysis tool
+            3. Analyze market sentiment using get_sentiment_analysis tool for multiple timeframes
+            4. Provide a comprehensive market analysis with confidence scores
+            
+            Focus on actionable insights including price trends, volume patterns, technical signal strength, and sentiment indicators.
+            Return a structured MarketAnalysisResponse with your complete analysis.
+            """
+            
+            market_result = self.agents["market_analyst"].run_sync(market_prompt, deps=deps)
+            results["market_analysis"] = {
+                "agent": "market_analyst",
+                "analysis": market_result.output,
+                "confidence": market_result.output.overall_confidence if hasattr(market_result.output, 'overall_confidence') else 0.8
+            }
+            
+            # Strategy Analysis
+            strategy_prompt = f"""
+            Based on market data for {symbol}, develop comprehensive trading strategies:
+            1. Get current stock data and Fibonacci levels using available tools
+            2. Analyze MACD crossovers, Bollinger Band signals, and momentum indicators
+            3. Generate a specific trading signal (BUY/SELL/HOLD) with confidence score
+            4. Provide entry/exit points and position sizing recommendations
+            5. Save your trading decision using save_strategy_decision tool
+            6. Create an audit entry using save_strategy_audit tool
+            
+            Return a structured TradingDecision with specific recommendations.
+            """
+            strategy_result = self.agents["strategy_agent"].run_sync(strategy_prompt, deps=deps)
+            results["strategy_analysis"] = {
+                "agent": "strategy_agent", 
+                "analysis": strategy_result.output,
+                "confidence": strategy_result.output.confidence if hasattr(strategy_result.output, 'confidence') else 0.75
+            }
+            
+            # Risk Assessment
+            risk_prompt = f"""
+            Assess the risk profile for trading {symbol}:
+            1. Get market data and sentiment analysis using available tools
+            2. Analyze recent volatility and price patterns
+            3. Review historical decision patterns using analyze_patterns tool
+            4. Evaluate market sentiment and potential risks
+            5. Recommend position sizing and risk management measures
+            6. Save risk assessment using save_risk_audit tool
+            
+            Return a structured TradingDecision focused on risk management.
+            """
+            
+            risk_result = self.agents["risk_manager"].run_sync(risk_prompt, deps=deps)
+            results["risk_analysis"] = {
+                "agent": "risk_manager",
+                "analysis": risk_result.output, 
+                "confidence": risk_result.output.confidence if hasattr(risk_result.output, 'confidence') else 0.85
+            }
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error in market analysis: {str(e)}")
+            return {"error": str(e)}
+    
+    def run_strategy_analysis(self, symbol: str, data: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
+        """Run Strategy Agent analysis independently"""
+        try:
+            deps = Dependencies(symbol=symbol, data=data)
+            results = {}
+            
+            strategy_prompt = f"""
+            Based on market data for {symbol}, develop comprehensive trading strategies:
+            1. Get current stock data and Fibonacci levels using available tools
+            2. Analyze MACD crossovers, Bollinger Band signals, and momentum indicators
+            3. Generate a specific trading signal (BUY/SELL/HOLD) with confidence score
+            4. Provide entry/exit points and position sizing recommendations
+            5. Save your trading decision using save_strategy_decision tool
+            6. Create an audit entry using save_strategy_audit tool
+            
+            Return a structured TradingDecision with specific recommendations.
+            """
+            
+            strategy_result = self.agents["strategy_agent"].run_sync(strategy_prompt, deps=deps)
+            results["strategy_analysis"] = {
+                "agent": "strategy_agent", 
+                "analysis": strategy_result.output,
+                "confidence": strategy_result.output.confidence if hasattr(strategy_result.output, 'confidence') else 0.75
+            }
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error in strategy analysis: {str(e)}")
+            return {"error": str(e)}
+
+    def run_risk_analysis(self, symbol: str, data: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
+        """Run Risk Manager Agent analysis independently"""
+        try:
+            deps = Dependencies(symbol=symbol, data=data)
+            results = {}
+            
