@@ -144,3 +144,156 @@ class PydanticTradingAgentSystem:
             """Save trading decision to audit trail"""
             return save_trading_decision(ctx.deps.symbol, decision, confidence, "strategy_agent")
         
+        @strategy_agent.tool
+        def save_strategy_audit(ctx: RunContext[Dependencies], action: str, confidence: float, rationale: str, risk_level: str = "MEDIUM") -> str:
+            """Save detailed strategy audit entry"""
+            return save_audit_entry(ctx.deps.symbol, "STRATEGY", action, confidence, rationale, risk_level=risk_level)
+        
+        # 3. Compliance & Regulatory Agent
+        regulatory_agent = Agent(
+            model=self.model_name,
+            deps_type=Dependencies,
+            output_type=ComplianceResponse
+        )
+        
+        @regulatory_agent.system_prompt
+        def regulatory_system_prompt(ctx: RunContext[Dependencies]) -> str:
+            return f"""You are a Regulatory Compliance Agent specializing in SEC regulations and trading compliance for {ctx.deps.symbol}.
+            
+            Your role:
+            - Ensure all trading decisions comply with SEC Regulation M
+            - Identify potential compliance violations
+            - Maintain detailed audit trails for regulatory review
+            - Block trades when necessary for compliance
+            
+            Always prioritize regulatory compliance and provide clear explanations for decisions."""
+        
+        @regulatory_agent.tool
+        def check_compliance(ctx: RunContext[Dependencies]) -> str:
+            """Check SEC Regulation M compliance for the current symbol"""
+            compliance_data = check_regulation_m_compliance(ctx.deps.symbol)
+            return f"Compliance analysis: {compliance_data.model_dump_json()}"
+        
+        @regulatory_agent.tool
+        def get_market_data(ctx: RunContext[Dependencies], period: str = "5d") -> str:
+            """Get recent market data for compliance analysis"""
+            stock_data = get_stock_data(ctx.deps.symbol, period, data=ctx.deps.data)
+            return f"Stock data retrieved: {stock_data.model_dump_json()}"
+        
+        @regulatory_agent.tool
+        def save_compliance_audit(ctx: RunContext[Dependencies], action: str, confidence: float, rationale: str, compliance_status: str) -> str:
+            """Save compliance audit entry"""
+            return save_audit_entry(ctx.deps.symbol, "REGULATORY", action, confidence, rationale, compliance_status=compliance_status)
+        
+        @regulatory_agent.tool
+        def get_audit_history(ctx: RunContext[Dependencies], limit: int = 10) -> str:
+            """Get recent audit trail for compliance review"""
+            audit_data = get_audit_trail(ctx.deps.symbol, limit)
+            return f"Audit trail: {audit_data}"
+        
+        # 4. Risk Management Agent
+        risk_agent = Agent(
+            model=self.model_name,
+            deps_type=Dependencies,
+            output_type=TradingDecision
+        )
+        
+        @risk_agent.system_prompt
+        def risk_system_prompt(ctx: RunContext[Dependencies]) -> str:
+            return f"""You are a Risk Management Agent specializing in portfolio risk assessment and position sizing for {ctx.deps.symbol}.
+            
+            Your role:
+            - Evaluate market volatility and risk exposure
+            - Recommend appropriate position sizing
+            - Analyze historical decision patterns for risk insights
+            - Provide risk-adjusted trading recommendations
+            
+            Always prioritize capital preservation and risk-adjusted returns."""
+        
+        @risk_agent.tool
+        def get_market_data(ctx: RunContext[Dependencies], period: str = "1mo") -> str:
+            """Get market data for risk analysis"""
+            stock_data = get_stock_data(ctx.deps.symbol, period, data=ctx.deps.data)
+            return f"Stock data retrieved: {stock_data.model_dump_json()}"
+        
+        @risk_agent.tool
+        def get_sentiment_analysis(ctx: RunContext[Dependencies], timeframe: str = "7d") -> str:
+            """Analyze market sentiment for risk assessment"""
+            sentiment_data = analyze_market_sentiment(ctx.deps.symbol, timeframe)
+            return f"Sentiment analysis: {sentiment_data.model_dump_json()}"
+        
+        @risk_agent.tool
+        def analyze_patterns(ctx: RunContext[Dependencies], lookback_days: int = 30) -> str:
+            """Analyze historical trading decision patterns"""
+            pattern_data = analyze_decision_patterns(ctx.deps.symbol, lookback_days)
+            return f"Decision patterns: {pattern_data}"
+        
+        @risk_agent.tool
+        def save_risk_audit(ctx: RunContext[Dependencies], action: str, confidence: float, rationale: str, risk_level: str) -> str:
+            """Save risk assessment audit entry"""
+            return save_audit_entry(ctx.deps.symbol, "RISK", action, confidence, rationale, risk_level=risk_level)
+        
+        # 5. Supervisor Agent
+        supervisor_agent = Agent(
+            model=self.model_name,
+            deps_type=Dependencies,
+            output_type=SupervisorDecision
+        )
+        
+        @supervisor_agent.system_prompt
+        def supervisor_system_prompt(ctx: RunContext[Dependencies]) -> str:
+            return f"""You are the Supervisor Agent, the senior portfolio manager making final trading decisions for {ctx.deps.symbol}.
+            
+            Your role:
+            - Review analysis from all specialized agents
+            - Make final trading decisions (BUY/SELL/HOLD)
+            - Balance profit potential with risk management and compliance
+            - Provide comprehensive rationale for all decisions
+            - Maintain detailed audit records
+            
+            Your decisions are final and must consider all agent inputs, market conditions, and regulatory requirements."""
+        
+        @supervisor_agent.tool
+        def get_market_data(ctx: RunContext[Dependencies], period: str = "1mo") -> str:
+            """Get comprehensive market data for final decision"""
+            stock_data = get_stock_data(ctx.deps.symbol, period, data=ctx.deps.data)
+            return f"Stock data retrieved: {stock_data.model_dump_json()}"
+        
+        @supervisor_agent.tool
+        def get_trading_summary(ctx: RunContext[Dependencies]) -> str:
+            """Get summary of all trading decisions"""
+            summary_data = get_trading_decisions_summary(ctx.deps.symbol)
+            return f"Trading decisions summary: {summary_data}"
+        
+        @supervisor_agent.tool
+        def get_audit_history(ctx: RunContext[Dependencies], limit: int = 20) -> str:
+            """Get comprehensive audit trail for decision context"""
+            audit_data = get_audit_trail(ctx.deps.symbol, limit)
+            return f"Full audit trail: {audit_data}"
+        
+        @supervisor_agent.tool
+        def save_final_decision(ctx: RunContext[Dependencies], action: str, confidence: float, rationale: str, risk_level: str, position_size: str) -> str:
+            """Save final supervisor decision to audit trail"""
+            return save_audit_entry(ctx.deps.symbol, "SUPERVISOR", action, confidence, rationale, 
+                                  risk_level=risk_level, position_size=position_size)
+
+        # 6. New Typed Agent: Trading Signal Agent (Option A: Enforcing enum-typed outputs)
+        trading_signal_agent = Agent(
+            model=self.model_name,
+            deps_type=Dependencies,
+            output_type=TradingDecision
+        )
+
+        @trading_signal_agent.system_prompt
+        def trading_signal_system_prompt(ctx: RunContext[Dependencies]) -> str:
+            return f"""You are a specialized Trading Signal Agent providing rigorous, type-safe trading decisions for {ctx.deps.symbol}.
+            
+            Your role:
+            - Analyze real market technical data, trends, Fibonacci levels, and historical patterns
+            - Formulate an unambiguous trading decision using strict enum literals.
+            - The 'decision' field MUST be strictly one of the TradingSignal enum literals: BUY, SELL, or HOLD. No free text is allowed.
+            - The 'risk_level' field MUST be strictly one of the RiskLevel enum literals: LOW, MEDIUM, or HIGH. No free text is allowed.
+            - The 'confidence' score MUST be a float between 0.0 and 1.0.
+            - Provide clear entry_price, exit_price, position_size_percent, and in-depth rationale.
+            - Save decisions and audit entries to maintain compliance and auditability.
+            
