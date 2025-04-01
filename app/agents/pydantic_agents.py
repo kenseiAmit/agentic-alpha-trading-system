@@ -443,3 +443,151 @@ class PydanticTradingAgentSystem:
             deps = Dependencies(symbol=symbol, data=data)
             results = {}
             
+            risk_prompt = f"""
+            Assess the risk profile for trading {symbol}:
+            1. Get market data and sentiment analysis using available tools
+            2. Analyze recent volatility and price patterns
+            3. Review historical decision patterns using analyze_patterns tool
+            4. Evaluate market sentiment and potential risks
+            5. Recommend position sizing and risk management measures
+            6. Save risk assessment using save_risk_audit tool
+            
+            Return a structured TradingDecision focused on risk management.
+            """
+            
+            risk_result = self.agents["risk_manager"].run_sync(risk_prompt, deps=deps)
+            results["risk_analysis"] = {
+                "agent": "risk_manager",
+                "analysis": risk_result.output,
+                "confidence": risk_result.output.confidence if hasattr(risk_result.output, 'confidence') else 0.85
+            }
+            
+            return results
+            
+        except Exception as e:
+            print(f"Error in risk analysis: {str(e)}")
+            return {"error": str(e)}
+
+    def run_trading_signal_agent(self, symbol: str, data: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
+        """Run dedicated Trading Signal Agent (Option A: typed agent enforcing enum literals)"""
+        try:
+            deps = Dependencies(symbol=symbol, data=data)
+            
+            prompt = f"""
+            Analyze trading signals for {symbol} using available tools:
+            1. Retrieve comprehensive stock data using get_market_data tool
+            2. Calculate Fibonacci retracement levels using get_fibonacci_analysis tool
+            3. Review historical trading decision patterns using analyze_patterns tool
+            4. Formulate an actionable, type-safe trading decision:
+               - 'decision' MUST be strictly one of the TradingSignal enum literals: BUY, SELL, HOLD
+               - 'risk_level' MUST be strictly one of the RiskLevel enum literals: LOW, MEDIUM, HIGH
+               - 'confidence' MUST be a float between 0.0 and 1.0
+               - Provide explicit entry_price, exit_price, and position_size_percent
+               - Provide a clear, thorough technical rationale
+            5. Save your trading decision using save_trading_signal_decision tool
+            6. Save your audit entry using save_trading_signal_audit tool
+            
+            Return a structured TradingDecision object adhering strictly to the schema.
+            """
+            
+            result = self.agents["trading_signal_agent"].run_sync(prompt, deps=deps)
+            
+            return {
+                "agent": "trading_signal_agent",
+                "analysis": result.output,
+                "decision": result.output,
+                "confidence": result.output.confidence if hasattr(result.output, 'confidence') else 0.85
+            }
+            
+        except Exception as e:
+            print(f"Error in trading signal agent: {str(e)}")
+            return {"error": str(e)}
+        
+    def run_regulatory_compliance(self, symbol: str, trading_signals: Dict) -> Dict[str, Any]:
+        """Run regulatory compliance check with PydanticAI"""
+        try:
+            deps = Dependencies(symbol=symbol)
+            
+            compliance_prompt = f"""
+            Perform comprehensive SEC Regulation M compliance check for {symbol}:
+            1. Use check_compliance tool to analyze current compliance status
+            2. Get recent market data for volume and price pattern analysis
+            3. Review audit history using get_audit_history tool for context
+            4. Analyze trading signals for potential violations: {trading_signals}
+            5. Determine if any trades should be blocked for compliance reasons
+            6. Save detailed compliance analysis using save_compliance_audit tool
+            7. Provide clear recommendation: APPROVED, PROCEED_WITH_CAUTION, or BLOCK_TRADES
+            
+            Return a structured ComplianceResponse with detailed compliance analysis.
+            """
+            
+            compliance_result = self.agents["regulatory_agent"].run_sync(compliance_prompt, deps=deps)
+            
+            return {
+                "agent": "regulatory_agent",
+                "analysis": compliance_result.output,
+                "compliance_check": True
+            }
+            
+        except Exception as e:
+            print(f"Error in compliance check: {str(e)}")
+            return {"error": str(e), "compliance_check": False}
+    
+    def run_supervisor_decision(self, symbol: str, all_analysis: Dict) -> Dict[str, Any]:
+        """Run final supervisor decision with comprehensive analysis"""
+        try:
+            deps = Dependencies(symbol=symbol)
+            
+            # Prepare context from all agents
+            context_summary = self._prepare_supervisor_context(all_analysis)
+            
+            supervisor_prompt = f"""
+            As the senior portfolio manager, make the final trading decision for {symbol}.
+            
+            Agent Analysis Summary:
+            {context_summary}
+            
+            Please:
+            1. Get current market data using get_market_data tool for final confirmation
+            2. Review trading decisions summary using get_trading_summary tool
+            3. Check comprehensive audit history using get_audit_history tool
+            4. Consider all agent recommendations, market conditions, and regulatory compliance
+            5. Make a final trading decision (BUY/SELL/HOLD) with specific reasoning
+            6. Determine appropriate risk level and position size percentage
+            7. Save your final decision using save_final_decision tool
+            8. Provide clear rationale explaining how you balanced different agent inputs
+            
+            Return a structured SupervisorDecision with your final recommendation and comprehensive rationale.
+            """
+            
+            supervisor_result = self.agents["supervisor"].run_sync(supervisor_prompt, deps=deps)
+            
+            return {
+                "agent": "supervisor",
+                "decision": supervisor_result.output,
+                "final_decision": True,
+                "confidence": supervisor_result.output.confidence if hasattr(supervisor_result.output, 'confidence') else 0.90
+            }
+            
+        except Exception as e:
+            print(f"Error in supervisor decision: {str(e)}")
+            return {"error": str(e), "final_decision": False}
+    
+    def _prepare_supervisor_context(self, all_analysis: Dict) -> str:
+        """Prepare summary context for supervisor agent"""
+        context = []
+        
+        for analysis_type, data in all_analysis.items():
+            if isinstance(data, dict) and "analysis" in data:
+                agent_name = data.get("agent", "unknown")
+                analysis_data = data["analysis"]
+                
+                # Handle structured Pydantic responses
+                if hasattr(analysis_data, 'model_dump'):
+                    analysis_text = str(analysis_data.model_dump())
+                else:
+                    analysis_text = str(analysis_data)
+                    
+                context.append(f"\n{analysis_type.upper()} ({agent_name}):\n{analysis_text}")
+        
+        return "\n".join(context)
