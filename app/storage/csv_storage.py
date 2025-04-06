@@ -120,3 +120,127 @@ class CSVStorage:
             symbol_df['created_at'] = pd.to_datetime(symbol_df['created_at'])
             symbol_df = symbol_df.sort_values('created_at', ascending=False)
             
+            # Limit results
+            symbol_df = symbol_df.head(limit)
+            
+            # Convert to list of dictionaries
+            return symbol_df.to_dict('records')
+            
+        except Exception as e:
+            print(f"Error reading trading decisions from CSV: {str(e)}")
+            return []
+    
+    def get_all_agent_decisions(self, symbol: str) -> List[Dict]:
+        """Get the latest decision from each agent for a symbol"""
+        try:
+            if not os.path.exists(self.trading_decisions_file):
+                return []
+            
+            df = pd.read_csv(self.trading_decisions_file)
+            
+            # Filter by symbol
+            symbol_df = df[df['symbol'] == symbol].copy()
+            if len(symbol_df) == 0:
+                return []
+            
+            symbol_df['created_at'] = pd.to_datetime(symbol_df['created_at'])
+            
+            # Get the latest decision for each agent
+            latest_decisions = symbol_df.sort_values('created_at', ascending=False).groupby('agent_name').first().reset_index()
+            
+            # Convert to list of dictionaries
+            return latest_decisions.to_dict('records')
+            
+        except Exception as e:
+            print(f"Error reading agent decisions from CSV: {str(e)}")
+            return []
+    
+    def get_trading_decisions(self, symbol: str = None) -> List[Dict]:
+        """Get trading decisions, optionally filtered by symbol"""
+        try:
+            if not os.path.exists(self.trading_decisions_file):
+                return []
+            
+            df = pd.read_csv(self.trading_decisions_file)
+            
+            # Filter by symbol if provided
+            if symbol:
+                df = df[df['symbol'] == symbol].copy()
+            
+            if len(df) == 0:
+                return []
+            
+            # Sort by created_at (most recent first)
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            df = df.sort_values('created_at', ascending=False)
+            
+            # Convert to list of dictionaries
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"Error reading trading decisions from CSV: {str(e)}")
+            return []
+    
+    def get_decisions_summary(self) -> Dict[str, Any]:
+        """Get summary of all trading decisions across all symbols"""
+        return self.get_all_decisions_summary()
+    
+    def upsert_screened_stock(self, symbol: str, company_name: str, current_price: float, average_volume: int):
+        """Add or update a screened stock in CSV"""
+        try:
+            # Read existing data
+            if os.path.exists(self.screened_stocks_file):
+                df = pd.read_csv(self.screened_stocks_file)
+            else:
+                df = pd.DataFrame(columns=['id', 'symbol', 'company_name', 'current_price', 'average_volume', 'last_updated'])
+            
+            # Check if symbol already exists
+            existing_row = df[df['symbol'] == symbol]
+            
+            if len(existing_row) > 0:
+                # Update existing row
+                df.loc[df['symbol'] == symbol, 'company_name'] = company_name
+                df.loc[df['symbol'] == symbol, 'current_price'] = current_price
+                df.loc[df['symbol'] == symbol, 'average_volume'] = average_volume
+                df.loc[df['symbol'] == symbol, 'last_updated'] = datetime.now().isoformat()
+            else:
+                # Add new row
+                new_id = len(df) + 1
+                new_row = {
+                    'id': new_id,
+                    'symbol': symbol,
+                    'company_name': company_name,
+                    'current_price': current_price,
+                    'average_volume': average_volume,
+                    'last_updated': datetime.now().isoformat()
+                }
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            
+            # Save
+            df.to_csv(self.screened_stocks_file, index=False)
+            
+        except Exception as e:
+            print(f"Error saving screened stock to CSV: {str(e)}")
+    
+    def get_screened_stocks(self) -> List[Dict]:
+        """Get all screened stocks"""
+        try:
+            if not os.path.exists(self.screened_stocks_file):
+                return []
+            
+            df = pd.read_csv(self.screened_stocks_file)
+            return df.to_dict('records')
+            
+        except Exception as e:
+            print(f"Error reading screened stocks from CSV: {str(e)}")
+            return []
+    
+    def clear_old_screened_stocks(self, hours: int = 24):
+        """Clear old screened stocks from CSV"""
+        try:
+            if not os.path.exists(self.screened_stocks_file):
+                return
+            
+            df = pd.read_csv(self.screened_stocks_file)
+            df['last_updated'] = pd.to_datetime(df['last_updated'])
+            
