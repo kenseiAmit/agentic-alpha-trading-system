@@ -244,3 +244,124 @@ class CSVStorage:
             df = pd.read_csv(self.screened_stocks_file)
             df['last_updated'] = pd.to_datetime(df['last_updated'])
             
+            # Keep only recent entries
+            cutoff_time = datetime.now() - pd.Timedelta(hours=hours)
+            df = df[df['last_updated'] >= cutoff_time]
+            
+            # Save
+            df.to_csv(self.screened_stocks_file, index=False)
+            
+        except Exception as e:
+            print(f"Error clearing old screened stocks from CSV: {str(e)}")
+    
+    def get_all_decisions_summary(self) -> Dict:
+        """Get a summary of all decisions for dashboard display"""
+        try:
+            if not os.path.exists(self.trading_decisions_file):
+                return {"total_decisions": 0, "agents": [], "symbols": []}
+            
+            df = pd.read_csv(self.trading_decisions_file)
+            
+            summary = {
+                "total_decisions": len(df),
+                "agents": df['agent_name'].unique().tolist() if len(df) > 0 else [],
+                "symbols": df['symbol'].unique().tolist() if len(df) > 0 else [],
+                "latest_decisions": df.tail(5).to_dict('records') if len(df) > 0 else []
+            }
+            
+            return summary
+            
+        except Exception as e:
+            print(f"Error getting decisions summary from CSV: {str(e)}")
+            return {"total_decisions": 0, "agents": [], "symbols": []}
+    
+    def save_audit_entry(self, symbol, decision_type, action, confidence, rationale, 
+                        compliance_status=None, risk_level=None, position_size=None, blocked_trades=None):
+        """Save detailed audit entry for supervisor and regulatory decisions"""
+        try:
+            # Read existing data
+            if os.path.exists(self.audit_trail_file):
+                df = pd.read_csv(self.audit_trail_file)
+            else:
+                df = pd.DataFrame(columns=[
+                    'id', 'symbol', 'timestamp', 'decision_type', 'action', 'confidence', 
+                    'rationale', 'compliance_status', 'risk_level', 'position_size', 'blocked_trades'
+                ])
+            
+            # Create new audit entry
+            new_id = len(df) + 1
+            new_entry = {
+                'id': new_id,
+                'symbol': symbol,
+                'timestamp': datetime.now().isoformat(),
+                'decision_type': decision_type,  # 'SUPERVISOR' or 'REGULATORY'
+                'action': action,
+                'confidence': confidence,
+                'rationale': rationale if rationale else '',  # Keep full rationale
+                'compliance_status': compliance_status or '',
+                'risk_level': risk_level or '',
+                'position_size': position_size or '',
+                'blocked_trades': blocked_trades or ''
+            }
+            
+            # Add entry and save
+            df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
+            df.to_csv(self.audit_trail_file, index=False)
+            
+        except Exception as e:
+            print(f"Error saving audit entry to CSV: {str(e)}")
+    
+    def get_audit_trail(self, symbol=None, limit=50):
+        """Get audit trail entries, optionally filtered by symbol"""
+        try:
+            if not os.path.exists(self.audit_trail_file):
+                return []
+            
+            df = pd.read_csv(self.audit_trail_file)
+            
+            if symbol:
+                df = df[df['symbol'] == symbol]
+            
+            # Sort by timestamp (most recent first)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.sort_values('timestamp', ascending=False)
+            
+            # Limit results
+            df = df.head(limit)
+            
+            # Convert to list of dictionaries and handle NaN values
+            records = df.to_dict('records')
+            
+            # Clean up NaN values
+            for record in records:
+                for key, value in record.items():
+                    if pd.isna(value) or str(value).lower() == 'nan':
+                        record[key] = ''
+            
+            return records
+            
+        except Exception as e:
+            print(f"Error reading audit trail from CSV: {str(e)}")
+            return []
+    
+    def get_audit_summary(self):
+        """Get summary of audit trail for dashboard"""
+        try:
+            if not os.path.exists(self.audit_trail_file):
+                return {"total_entries": 0, "supervisor_decisions": 0, "regulatory_decisions": 0, "symbols": []}
+            
+            df = pd.read_csv(self.audit_trail_file)
+            
+            summary = {
+                "total_entries": len(df),
+                "supervisor_decisions": len(df[df['decision_type'] == 'SUPERVISOR']),
+                "regulatory_decisions": len(df[df['decision_type'] == 'REGULATORY']),
+                "symbols": df['symbol'].unique().tolist() if len(df) > 0 else [],
+                "latest_entries": df.tail(10).to_dict('records') if len(df) > 0 else []
+            }
+            
+            return summary
+            
+        except Exception as e:
+            print(f"Error getting audit summary from CSV: {str(e)}")
+            return {"total_entries": 0, "supervisor_decisions": 0, "regulatory_decisions": 0, "symbols": []}
