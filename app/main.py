@@ -265,3 +265,71 @@ def run_trading_signal_agent(symbol=None):
     except Exception as e:
         return {"error": str(e)}
 
+def run_supervisor_agent(symbol=None):
+    """Run Supervisor Agent individually - Requires ALL 5 prior agents to run first"""
+    if symbol is None:
+        symbol = st.session_state.symbol
+    
+    # Enforce strict order: Check if ALL 5 other agents have run
+    missing_agents = []
+    if 'market_analysis' not in st.session_state or not st.session_state.market_analysis:
+        missing_agents.append("Market Analyst")
+    if 'strategy_analysis' not in st.session_state or not st.session_state.strategy_analysis:
+        missing_agents.append("Strategy Agent")
+    if 'risk_analysis' not in st.session_state or not st.session_state.risk_analysis:
+        missing_agents.append("Risk Manager")
+    if 'regulatory_analysis' not in st.session_state or not st.session_state.regulatory_analysis:
+        missing_agents.append("Regulatory Agent")
+    if 'trading_signal_analysis' not in st.session_state or not st.session_state.trading_signal_analysis:
+        missing_agents.append("Trading Signal Agent")
+    
+    if missing_agents:
+        return {"error": f"❌ Please run {', '.join(missing_agents)} first - Supervisor needs ALL agent analysis"}
+    
+    try:
+        pydantic_system = get_pydantic_agents()
+        print(f"🎯 Running Supervisor Agent for {symbol}...")
+        
+        # Synthesize analyses from all preceding completed agents
+        if 'market_analysis' in st.session_state and st.session_state.market_analysis and "raw_results" in st.session_state.market_analysis:
+            all_analysis = dict(st.session_state.market_analysis["raw_results"])
+        else:
+            all_analysis = {}
+        all_analysis["market_analysis"] = {"agent": "market_analyst", "analysis": st.session_state.market_analysis.get("analysis", "")}
+        all_analysis["strategy_analysis"] = {"agent": "strategy_agent", "analysis": st.session_state.strategy_analysis.get("analysis", "")}
+        all_analysis["risk_analysis"] = {"agent": "risk_manager", "analysis": st.session_state.risk_analysis.get("analysis", "")}
+        all_analysis["regulatory_analysis"] = {"agent": "regulatory_agent", "analysis": st.session_state.regulatory_analysis.get("analysis", "")}
+        all_analysis["trading_signal_analysis"] = {"agent": "trading_signal_agent", "analysis": f"Decision: {st.session_state.trading_signal_analysis.get('decision')} | Risk: {st.session_state.trading_signal_analysis.get('risk_level')} | Rationale: {st.session_state.trading_signal_analysis.get('rationale')}"}
+        
+        supervisor_results = pydantic_system.run_supervisor_decision(symbol, all_analysis)
+        
+        supervisor_data = supervisor_results.get("decision", "No supervisor decision available")
+        if hasattr(supervisor_data, 'rationale'):
+            decision_signal = supervisor_data.final_decision.value if hasattr(supervisor_data.final_decision, 'value') else str(supervisor_data.final_decision)
+            decision_text = f"FINAL DECISION: {decision_signal}\n\nANALYSIS: {supervisor_data.rationale}"
+            confidence = supervisor_data.confidence
+        else:
+            decision_text = str(supervisor_data)
+            confidence = supervisor_results.get("confidence", 0.8)
+            decision_signal = "HOLD"
+        
+        result = {
+            "analysis": decision_text,
+            "decision": decision_signal,
+            "confidence": confidence,
+            "timestamp": pd.Timestamp.now()
+        }
+        
+        # Save audit entry for supervisor decision
+        storage.save_audit_entry(
+            symbol=symbol,
+            decision_type="SUPERVISOR", 
+            action=decision_signal,
+            confidence=confidence,
+            rationale=decision_text
+        )
+        
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
