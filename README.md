@@ -1,10 +1,14 @@
-# Agentic Alpha: Type-Safe Multi-Agent Equity Research, SEC Reg M Compliance & Trading Platform
+<div align="center">
+  <img src="assets/hero-banner.svg" alt="Agentic Alpha Trading Platform" width="100%" />
+  <br/><br/>
+  ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)
+  ![PydanticAI](https://img.shields.io/badge/Agents-PydanticAI%20Type--Safe-E92063?style=flat-square)
+  ![Compliance](https://img.shields.io/badge/Governance-SEC%20Regulation%20M%20Audit-0D9488?style=flat-square)
+  ![Persistence](https://img.shields.io/badge/Storage-SQLite%2FPostgreSQL%20%2B%20CSV%20Sync-2563EB?style=flat-square)
+  ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
+</div>
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)
-![PydanticAI](https://img.shields.io/badge/Agents-PydanticAI%20Type--Safe-E92063?style=flat-square)
-![Compliance](https://img.shields.io/badge/Governance-SEC%20Regulation%20M%20Audit-0D9488?style=flat-square)
-![Persistence](https://img.shields.io/badge/Storage-SQLite%2FPostgreSQL%20%2B%20CSV%20Sync-2563EB?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
+---
 
 Six-agent quantitative equity research, risk governance, and trade-signal platform built with **PydanticAI**, **OpenAI (`gpt-4o`)**, **Streamlit**, and **Plotly**—enforcing deterministic analyst-to-supervisor execution, Fibonacci & RSI market tools, **SEC Regulation M** pre-trade compliance gating, strict enum-typed `TradingSignal` contracts, and dual ACID **SQLite / PostgreSQL + CSV** persistence.
 
