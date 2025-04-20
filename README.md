@@ -1,11 +1,13 @@
 <div align="center">
   <img src="assets/hero-banner.svg" alt="Agentic Alpha Trading Platform" width="100%" />
   <br/><br/>
-  ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)
-  ![PydanticAI](https://img.shields.io/badge/Agents-PydanticAI%20Type--Safe-E92063?style=flat-square)
-  ![Compliance](https://img.shields.io/badge/Governance-SEC%20Regulation%20M%20Audit-0D9488?style=flat-square)
-  ![Persistence](https://img.shields.io/badge/Storage-SQLite%2FPostgreSQL%20%2B%20CSV%20Sync-2563EB?style=flat-square)
-  ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python" />
+    <img src="https://img.shields.io/badge/Agents-PydanticAI%20Type--Safe-E92063?style=flat-square" alt="PydanticAI" />
+    <img src="https://img.shields.io/badge/Governance-SEC%20Regulation%20M%20Audit-0D9488?style=flat-square" alt="Compliance" />
+    <img src="https://img.shields.io/badge/Storage-SQLite%2FPostgreSQL%20%2B%20CSV%20Sync-2563EB?style=flat-square" alt="Persistence" />
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-475569?style=flat-square" alt="License" /></a>
+  </p>
 </div>
 
 ---
