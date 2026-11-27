@@ -12,6 +12,8 @@
 
 ---
 
+![Agentic Alpha — 6-Agent PydanticAI & SEC Reg M Platform](docs/images/architecture_blueprint.png)
+
 Six-agent quantitative equity research, risk governance, and trade-signal platform built with **PydanticAI**, **OpenAI (`gpt-4o`)**, **Streamlit**, and **Plotly**—enforcing deterministic analyst-to-supervisor execution, Fibonacci & RSI market tools, **SEC Regulation M** pre-trade compliance gating, strict enum-typed `TradingSignal` contracts, and dual ACID **SQLite / PostgreSQL + CSV** persistence.
 
 ![Agentic Alpha Pipeline Telemetry](docs/images/agentic_alpha_pipeline_telemetry.png)
